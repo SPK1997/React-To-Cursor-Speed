@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>React To Speed</title>
+</head>
+
+<body>
+    <canvas id="myCanvas" style="background-color: grey;" width="400" height="400"></canvas>
+
+    <script>
+        const el = document.getElementById('myCanvas');
+        const ctx = el.getContext('2d');
+
+        function mouseSizeChangeOnMove(onMouseMoveCb, timeDiff) {
+            let prevClientX = null;
+            let prevClientY = null;
+            let speed = 1;
+            let timerId = null;
+            let dist = null;
+
+            return (...params) => {
+                if (timerId) {
+                    if (!prevClientX && !prevClientY) {
+                        prevClientX = params[0].clientX;
+                        prevClientY = params[0].clientY;
+                    } else {
+                        dist = dist + Math.sqrt((prevClientX - params[0].clientX) ** 2 + (prevClientY - params[0].clientY) ** 2);
+                        prevClientX = params[0].clientX;
+                        prevClientY = params[0].clientY;
+                    }
+                } else {
+                    timerId = setTimeout(() => { timerId = null; }, timeDiff);
+                    if (dist) {
+                        speed = dist / timeDiff;
+                        dist = 0;
+                    }
+                }
+                params[0].speedOfCursor = speed;
+                onMouseMoveCb.bind(this)(...params);
+            }
+        }
+
+        function onMouseMove(e) {
+            let radius = 20 * e.speedOfCursor;
+            if (radius <= 20) { // min radius = 20
+                radius = 20;
+            } else if (radius >= 100) { // max radius = 100
+                radius = 100;
+            }
+
+            let { left: canvasLeft, top: canvasTop } = el.getBoundingClientRect();
+            let centerX = e.clientX - canvasLeft;
+            let centerY = e.clientY - canvasTop;
+
+            drawCircle(centerX, centerY, radius)
+        }
+
+        function drawCircle(centerX, centerY, radius) {
+            ctx.clearRect(0, 0, el.width, el.height);
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        // 90 Milliseconds in the reaction time
+        // Reduce it to react faster to speed variations
+        // Increase it to react slower to speed variations
+        el.addEventListener('mousemove', mouseSizeChangeOnMove(onMouseMove, 90)); 
+    </script>
+</body>
+
+</html>
